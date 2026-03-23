@@ -8,7 +8,6 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
@@ -59,7 +58,6 @@
             bottom: 1.5rem;
             right: 1.5rem;
             z-index: 100;
-            pointer-events: none;
         }
     </style>
 </head>
@@ -96,11 +94,11 @@
                 { id: 14, name: '精密作業勞工視機能保護設施標準', type: '法規命令', remoteDate: '2014-03-30', localCheckDate: UNIFIED_DATE },
                 { id: 15, name: '工業用機器人危害預防標準', type: '法規命令', remoteDate: '2018-02-14', localCheckDate: UNIFIED_DATE },
                 { id: 16, name: '鍋爐及壓力容器安全規則', type: '法規命令', remoteDate: '2014-07-01', localCheckDate: UNIFIED_DATE },
-                { id: 17, name: '游離輻屬防護法', type: '法律', remoteDate: '2002-01-30', localCheckDate: UNIFIED_DATE },
-                { id: 18, name: '游離輻屬防護法施行細則', type: '法規命令', remoteDate: '2008-02-22', localCheckDate: UNIFIED_DATE },
-                { id: 19, name: '游離輻屬防護安全標準', type: '法規命令', remoteDate: '2005-12-30', localCheckDate: UNIFIED_DATE },
-                { id: 20, name: '放射性物質與可發生游離輻屬設備及其輻屬作業管理辦法', type: '法規命令', remoteDate: '2018-12-22', localCheckDate: UNIFIED_DATE },
-                { id: 21, name: '放射性物質或可發生游離輻屬設備操作人員管理辦法', type: '法規命令', remoteDate: '2009-04-17', localCheckDate: UNIFIED_DATE },
+                { id: 17, name: '游離輻射防護法', type: '法律', remoteDate: '2002-01-30', localCheckDate: UNIFIED_DATE },
+                { id: 18, name: '游離輻射防護法施行細則', type: '法規命令', remoteDate: '2008-02-22', localCheckDate: UNIFIED_DATE },
+                { id: 19, name: '游離輻射防護安全標準', type: '法規命令', remoteDate: '2005-12-30', localCheckDate: UNIFIED_DATE },
+                { id: 20, name: '放射性物質與可發生游離輻射設備及其輻射作業管理辦法', type: '法規命令', remoteDate: '2018-12-22', localCheckDate: UNIFIED_DATE },
+                { id: 21, name: '放射性物質或可發生游離輻射設備操作人員管理辦法', type: '法規命令', remoteDate: '2009-04-17', localCheckDate: UNIFIED_DATE },
                 { id: 22, name: '事業單位僱用女性勞工夜間工作場所必要之安全衛生設施標準', type: '法規命令', remoteDate: '2015-03-31', localCheckDate: UNIFIED_DATE },
                 { id: 23, name: '機械設備器具安全標準', type: '法規命令', remoteDate: '2022-05-11', localCheckDate: UNIFIED_DATE },
                 { id: 24, name: '勞動基準法', type: '法律', remoteDate: '2024-07-31', localCheckDate: UNIFIED_DATE },
@@ -109,41 +107,6 @@
                 { id: 27, name: '勞工職業災害保險及保護法第十條規定參加保險辦法', type: '法規命令', remoteDate: '2022-03-09', localCheckDate: UNIFIED_DATE },
                 { id: 28, name: '缺氧症預防規則', type: '法規命令', remoteDate: '2014-06-26', localCheckDate: UNIFIED_DATE }
             ]);
-
-            // 匯出 Excel 的邏輯
-            const handleExport = () => {
-                const currentMonth = TODAY.getMonth() + 1;
-                const quarter = Math.ceil(currentMonth / 3);
-                const year = TODAY.getFullYear();
-                
-                // 整理要匯出的資料格式
-                const exportData = laws.map((law, index) => {
-                    const status = getLawStatus(law.remoteDate, law.localCheckDate);
-                    return {
-                        "序號": index + 1,
-                        "法規名稱": law.name,
-                        "法規類別": law.type,
-                        "鑑別季度": `${year} Q${quarter}`,
-                        "全國法規資料庫日期": law.remoteDate,
-                        "公司最近登錄/鑑別日期": law.localCheckDate,
-                        "合規狀態": status.text,
-                        "備註": status.code === 'danger' ? "發現新條文，需安排更新訓練" : "維持現行管理計畫"
-                    };
-                });
-
-                // 使用 XLSX 產出檔案
-                const worksheet = XLSX.utils.json_to_sheet(exportData);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "法規鑑別總表");
-                
-                // 設定欄位寬度
-                const wscols = [
-                    {wch: 6}, {wch: 40}, {wch: 12}, {wch: 10}, {wch: 18}, {wch: 18}, {wch: 12}, {wch: 25}
-                ];
-                worksheet['!cols'] = wscols;
-
-                XLSX.writeFile(workbook, `職安法規鑑別總表_${year}_Q${quarter}.xlsx`);
-            };
 
             const getLawStatus = (remoteDate, localDate) => {
                 const rDate = new Date(remoteDate);
@@ -229,11 +192,7 @@
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
-                            {/* 綁定匯出函數 */}
-                            <button 
-                                onClick={handleExport}
-                                className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-black hover:bg-slate-900 transition-all shadow-md active:scale-95"
-                            >
+                            <button className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-black hover:bg-slate-900 transition-all shadow-md active:scale-95">
                                 <i className="fas fa-file-export"></i> 匯出鑑別紀錄總表
                             </button>
                             <div className="hidden md:flex bg-slate-100 p-1 rounded-xl border border-slate-200">
@@ -388,10 +347,10 @@
                     </main>
 
                     {/* Developer Info */}
-                    <div className="developer-tag opacity-60 hover:opacity-100 transition-opacity">
-                        <div className="bg-slate-900/90 backdrop-blur-md text-white px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/10">
+                    <div className="developer-tag">
+                        <div className="bg-slate-900/90 backdrop-blur-md text-white px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/10 opacity-60 hover:opacity-100 transition-opacity cursor-default">
                             <div className="w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse"></div>
-                            <span className="text-[10px] font-black tracking-widest uppercase">System Developer By Sam Sun</span>
+                            <span className="text-[10px] font-black tracking-widest uppercase">System Developed By Sam Sun</span>
                         </div>
                     </div>
 

@@ -8,6 +8,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
@@ -109,6 +110,41 @@
                 { id: 28, name: '缺氧症預防規則', type: '法規命令', remoteDate: '2014-06-26', localCheckDate: UNIFIED_DATE }
             ]);
 
+            // 匯出 Excel 的邏輯
+            const handleExport = () => {
+                const currentMonth = TODAY.getMonth() + 1;
+                const quarter = Math.ceil(currentMonth / 3);
+                const year = TODAY.getFullYear();
+                
+                // 整理要匯出的資料格式
+                const exportData = laws.map((law, index) => {
+                    const status = getLawStatus(law.remoteDate, law.localCheckDate);
+                    return {
+                        "序號": index + 1,
+                        "法規名稱": law.name,
+                        "法規類別": law.type,
+                        "鑑別季度": `${year} Q${quarter}`,
+                        "全國法規資料庫日期": law.remoteDate,
+                        "公司最近登錄/鑑別日期": law.localCheckDate,
+                        "合規狀態": status.text,
+                        "備註": status.code === 'danger' ? "發現新條文，需安排更新訓練" : "維持現行管理計畫"
+                    };
+                });
+
+                // 使用 XLSX 產出檔案
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "法規鑑別總表");
+                
+                // 設定欄位寬度
+                const wscols = [
+                    {wch: 6}, {wch: 40}, {wch: 12}, {wch: 10}, {wch: 18}, {wch: 18}, {wch: 12}, {wch: 25}
+                ];
+                worksheet['!cols'] = wscols;
+
+                XLSX.writeFile(workbook, `職安法規鑑別總表_${year}_Q${quarter}.xlsx`);
+            };
+
             const getLawStatus = (remoteDate, localDate) => {
                 const rDate = new Date(remoteDate);
                 const lDate = localDate ? new Date(localDate) : new Date(0);
@@ -193,7 +229,11 @@
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
-                            <button className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-black hover:bg-slate-900 transition-all shadow-md active:scale-95">
+                            {/* 綁定匯出函數 */}
+                            <button 
+                                onClick={handleExport}
+                                className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-black hover:bg-slate-900 transition-all shadow-md active:scale-95"
+                            >
                                 <i className="fas fa-file-export"></i> 匯出鑑別紀錄總表
                             </button>
                             <div className="hidden md:flex bg-slate-100 p-1 rounded-xl border border-slate-200">

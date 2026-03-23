@@ -83,7 +83,7 @@
             const [filterType, setFilterType] = useState('全部');
 
             const TODAY = new Date('2026-03-23');
-            const UNIFIED_DATE = '2026-03-02'; // 使用者要求統一改為 2026-03-02
+            const UNIFIED_DATE = '2026-03-02'; 
 
             const initialLaws = [
                 { id: 1, name: '職業安全衛生法', type: '法律', remoteDate: '2025-12-19', localCheckDate: UNIFIED_DATE },
@@ -138,7 +138,6 @@
                     shadow: 'shadow-amber-200'
                 };
 
-                // 加深鑑別完成的樣式
                 return { 
                     code: 'success', 
                     color: 'bg-emerald-600', 
@@ -235,9 +234,9 @@
                                                 <div key={law.id} className="p-5 rounded-2xl transition-all flex flex-col lg:flex-row lg:items-center justify-between law-card-glow gap-6">
                                                     <div className="flex gap-4 items-center flex-1">
                                                         <div className="relative shrink-0">
-                                                            <div className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center shadow-lg transition-colors ${status.color} ${status.shadow} text-white`}>
-                                                                <span className="text-[10px] font-black opacity-60 leading-none mb-1">{index + 1}</span>
-                                                                <i className={`fas ${status.icon} text-sm`}></i>
+                                                            {/* 調淡項次方塊顏色為橘色 bg-orange-400/90 */}
+                                                            <div className="w-12 h-12 rounded-2xl flex flex-col items-center justify-center shadow-md bg-orange-400/90 text-white">
+                                                                <span className="text-xs font-black tracking-tight">{index + 1}</span>
                                                             </div>
                                                         </div>
 
@@ -260,9 +259,14 @@
                                                                         {law.localCheckDate}
                                                                     </span>
                                                                 </div>
-                                                                <div className="ml-4 flex items-center gap-1">
+                                                                <div className="ml-4 flex items-center gap-1.5">
+                                                                    {/* 鑑別完成標籤 */}
                                                                     <span className={`text-[10px] font-black px-3 py-1 rounded shadow-sm ${status.code === 'success' ? 'bg-emerald-600 text-white' : status.code === 'danger' ? 'bg-rose-50 text-rose-500' : 'bg-slate-50 text-slate-400'}`}>
                                                                         {status.text}
+                                                                    </span>
+                                                                    {/* 新增：尚未鑑別標籤 (無色透明虛線框) */}
+                                                                    <span className="text-[10px] font-black px-3 py-1 rounded border border-dashed border-slate-300 text-slate-400 bg-transparent">
+                                                                        尚未鑑別
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -270,7 +274,7 @@
                                                     </div>
 
                                                     <div className="flex items-center gap-3 shrink-0 ml-16 lg:ml-0">
-                                                        <button onClick={() => startSync(law)} className="flex-1 md:flex-none px-5 py-3 rounded-xl font-black text-xs bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95">紀錄明細</button>
+                                                        <button onClick={() => startSync(law)} className="flex-1 md:flex-none px-5 py-3 rounded-xl font-black text-xs bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95">查看詳情</button>
                                                         <button onClick={() => startSync(law)} className={`flex-1 md:flex-none px-8 py-3 rounded-xl font-black text-xs text-white shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 ${status.code === 'danger' ? 'bg-rose-600 shadow-rose-600/20 hover:bg-rose-700' : 'bg-blue-600 shadow-blue-600/20 hover:bg-blue-700'}`}>
                                                             <i className={`fas ${status.code === 'danger' ? 'fa-bolt' : 'fa-check-double'} text-[10px]`}></i>
                                                             {status.code === 'danger' ? '立即鑑別' : '重新鑑別'}

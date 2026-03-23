@@ -3,293 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>法規自動監控與鑑別系統 v3.0</title>
+    <title>職安法規自動監控與鑑別系統 v4.0</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        @keyframes progress {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(200%); }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background-color: #f8fafc;
         }
-        .animate-progress {
-            animation: progress 2s ease-in-out infinite;
+        @keyframes scan {
+            0% { transform: translateY(-100%); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: translateY(100%); opacity: 0; }
+        }
+        .scan-line {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #3b82f6, transparent);
+            animation: scan 2s linear infinite;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 恢復紫色發光外框效果 */
+        .law-card-glow {
+            border: 2px solid #e0d7ff; /* 淡紫色邊框 */
+            background-color: #ffffff;
+            box-shadow: 0 0 15px rgba(224, 215, 255, 0.6); /* 紫色發光陰影 */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .law-card-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(224, 215, 255, 0.9);
+            border-color: #d1c4ff;
         }
     </style>
 </head>
-<body class="bg-[#f4f7f9]">
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
-
-        // 模擬 Lucide React 組件的行為 (在 HTML 模式下使用 <i> 標籤渲染)
-        const Icon = ({ name, className = "w-5 h-5" }) => {
-            useEffect(() => {
-                if (window.lucide) {
-                    window.lucide.createIcons();
-                }
-            }, [name]);
-            return <i data-lucide={name} className={className}></i>;
-        };
+        const { useState } = React;
 
         const App = () => {
             const [activeTab, setActiveTab] = useState('monitor');
-            const [loading, setLoading] = useState(false);
-            const [selectedLaw, setSelectedLaw] = useState(null);
             const [isSyncing, setIsSyncing] = useState(false);
+            const [selectedLaw, setSelectedLaw] = useState(null);
 
-            const [latestUpdates, setLatestUpdates] = useState([
-                { 
-                    id: 1, 
-                    name: '職業安全衛生法', 
-                    type: '法律', 
-                    internalPublishDate: '2025-12-05', 
-                    remotePublishDate: '2026-03-15', 
-                    status: '待更新', 
-                    source: '總統府', 
-                    updateNote: '源頭防災與承攬管理修正' 
-                },
-                { 
-                    id: 2, 
-                    name: '職業安全衛生設施規則', 
-                    type: '法規命令', 
-                    internalPublishDate: '2026-01-06', 
-                    remotePublishDate: '2026-01-06', 
-                    status: '最新', 
-                    source: '勞動部', 
-                    updateNote: '高氣溫作業危害預防' 
-                },
-                { 
-                    id: 3, 
-                    name: '營造業法', 
-                    type: '法律', 
-                    internalPublishDate: '2024-11-20', 
-                    remotePublishDate: '2024-11-20', 
-                    status: '最新', 
-                    source: '內政部', 
-                    updateNote: '例行維護' 
-                }
-            ]);
+            // 匯入完整的 28 項法規清單與對應日期
+            const initialLaws = [
+                { id: 1, name: '職業安全衛生法', type: '法律', remoteDate: '2025-12-19', status: 'conflict' },
+                { id: 2, name: '職業安全衛生法施行細則', type: '法規命令', remoteDate: '2020-02-27', status: 'latest' },
+                { id: 3, name: '職業安全衛生管理辦法', type: '法規命令', remoteDate: '2022-01-05', status: 'latest' },
+                { id: 4, name: '職業安全衛生設施規則', type: '法規命令', remoteDate: '2024-08-01', status: 'latest' },
+                { id: 5, name: '職業安全衛生教育訓練規則', type: '法規命令', remoteDate: '2025-09-04', status: 'latest' },
+                { id: 6, name: '職業安全衛生標示設置準則', type: '法規命令', remoteDate: '2014-07-02', status: 'latest' },
+                { id: 7, name: '勞工作業環境監測實施辦法', type: '法規命令', remoteDate: '2016-11-02', status: 'latest' },
+                { id: 8, name: '勞工作業場所容許暴露標準', type: '法規命令', remoteDate: '2025-04-11', status: 'latest' },
+                { id: 9, name: '有機溶劑中毒預防規則', type: '法規命令', remoteDate: '2025-05-14', status: 'latest' },
+                { id: 10, name: '危害性化學品標示及通識規則', type: '法規命令', remoteDate: '2018-11-09', status: 'latest' },
+                { id: 11, name: '勞工健康保護規則', type: '法規命令', remoteDate: '2021-12-22', status: 'latest' },
+                { id: 12, name: '女性勞工母性健康保護實施辦法', type: '法規命令', remoteDate: '2024-05-31', status: 'latest' },
+                { id: 13, name: '妊娠與分娩後女性及未滿十八歲勞工禁止從事危險性或有害性工作認定標準', type: '行政規則', remoteDate: '2025-11-20', status: 'latest' },
+                { id: 14, name: '精密作業勞工視機能保護設施標準', type: '法規命令', remoteDate: '2014-03-30', status: 'latest' },
+                { id: 15, name: '工業用機器人危害預防標準', type: '法規命令', remoteDate: '2018-02-14', status: 'latest' },
+                { id: 16, name: '鍋爐及壓力容器安全規則', type: '法規命令', remoteDate: '2014-07-01', status: 'latest' },
+                { id: 17, name: '游離輻訴防護法', type: '法律', remoteDate: '2002-01-30', status: 'latest' },
+                { id: 18, name: '游離輻訴防護法施行細則', type: '法規命令', remoteDate: '2008-02-22', status: 'latest' },
+                { id: 19, name: '游離輻訴防護安全標準', type: '法規命令', remoteDate: '2005-12-30', status: 'latest' },
+                { id: 20, name: '放射性物質與可發生游離輻訴設備及其輻訴作業管理辦法', type: '法規命令', remoteDate: '2018-12-22', status: 'latest' },
+                { id: 21, name: '放射性物質或可發生游離輻訴設備操作人員管理辦法', type: '法規命令', remoteDate: '2009-04-17', status: 'latest' },
+                { id: 22, name: '事業單位僱用女性勞工夜間工作場所必要之安全衛生設施標準', type: '法規命令', remoteDate: '2015-03-31', status: 'latest' },
+                { id: 23, name: '機械設備器具安全標準', type: '法規命令', remoteDate: '2022-05-11', status: 'latest' },
+                { id: 24, name: '勞動基準法', type: '法律', remoteDate: '2024-07-31', status: 'conflict' },
+                { id: 25, name: '勞工職業災害保險及保護法', type: '法律', remoteDate: '2021-04-30', status: 'latest' },
+                { id: 26, name: '勞工職業災害保險及保護法施行細則', type: '法規命令', remoteDate: '2025-05-29', status: 'latest' },
+                { id: 27, name: '勞工職業災害保險及保護法第十條規定參加保險辦法', type: '法規命令', remoteDate: '2022-03-09', status: 'latest' },
+                { id: 28, name: '缺氧症預防規則', type: '法規命令', remoteDate: '2014-06-26', status: 'latest' }
+            ];
 
-            const getComparisonData = (lawName, hasDiff) => {
-                if (lawName === '職業安全衛生法' && hasDiff) {
+            const getComparisonData = (lawName) => {
+                if (lawName === '職業安全衛生法') {
                     return [
-                        { 
-                            article: '第 15-1 條 (新增)', 
-                            oldText: '（無規定）', 
-                            newText: '一定規模以上工程之業主應於規劃設計階段實施風險評估，並合理編列安全衛生費用。', 
-                            diffType: 'added',
-                            analysis: '強制業主介入源頭管理，不僅是承包商責任。'
-                        },
-                        { 
-                            article: '第 27-1 條 (修正)', 
-                            oldText: '事業單位與承攬人分別僱用勞工共同作業時，應指定一人負責統合。', 
-                            newText: '一定規模以上工程交付二個以上施工者，業主應指定一人負整體統合管理責任，並設置管理協議組織。', 
-                            diffType: 'modified',
-                            analysis: '明確定義「業主」之指定責任，解決平行分包之安全缺口。'
-                        }
+                        { article: '第 15-1 條 (新增)', oldText: '（無規定）', newText: '一定規模以上工程之業主應於規劃設計階段實施風險評估，並合理編列安全衛生費用。', analysis: '【業主責任明確化】' },
+                        { article: '第 27-1 條 (修正)', oldText: '事業單位與承攬人分別僱用勞工共同作業時，應指定一人負責統合。', newText: '業主應指定一人負整體統合管理責任，並設置管理協議組織。', analysis: '【統合管理升級】' }
                     ];
                 }
-                return [{ article: '第 1 條', oldText: '舊版本內容...', newText: '目前已是最新版本內容。', diffType: 'none', analysis: '無異動' }];
+                return [{ article: '內容鑑別中', oldText: '載入舊版條文內容...', newText: '載入最新公佈條文內容...', analysis: 'AI 正在分析此法規的具體變動對企業適用的影響。' }];
             };
 
-            const handleIdentify = (law) => {
+            const startSync = (law) => {
                 setIsSyncing(true);
                 setTimeout(() => {
-                    const hasDiff = law.internalPublishDate !== law.remotePublishDate;
-                    setSelectedLaw({ ...law, hasDiff });
+                    setSelectedLaw(law);
                     setActiveTab('compare');
                     setIsSyncing(false);
-                }, 1800);
+                }, 1200);
             };
 
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            }, [activeTab, isSyncing]);
-
             return (
-                <div className="min-h-screen flex flex-col font-sans text-slate-900">
-                    {/* 頂部導覽 */}
-                    <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-30 shadow-sm">
-                        <div className="flex items-center gap-4">
-                            <div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-200">
-                                <Icon name="shield-check" className="text-white w-6 h-6" />
+                <div className="min-h-screen flex flex-col">
+                    <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-40 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-blue-600 w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg">
+                                <i className="fas fa-file-shield text-lg"></i>
                             </div>
                             <div>
-                                <h1 className="text-lg font-black text-slate-800 tracking-tight">法規自動監控與鑑別系統</h1>
-                                <div className="flex items-center gap-2 text-[10px] text-emerald-600 font-bold uppercase tracking-widest">
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                    </span>
-                                    Connected to Laws DB
+                                <h1 className="text-lg font-black text-slate-800 leading-tight">職安法規自動監控與鑑別系統</h1>
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-bold uppercase tracking-widest leading-none">
+                                        <span className="flex h-2 w-2 relative">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                        </span>
+                                        Live Sync Active
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-600">
-                                <Icon name="globe" className="w-4 h-4 text-slate-400" />
-                                <span>全國法規資料庫同步中</span>
+                            <div className="flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-full border border-slate-200 text-xs font-bold text-slate-500">
+                                <span>全國法規資料庫 API 連線中</span>
                             </div>
-                            <div className="relative">
-                                <Icon name="bell" className="w-5 h-5 text-slate-500" />
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold border-2 border-white">2</span>
-                            </div>
-                            <div className="h-10 w-10 bg-slate-200 rounded-2xl border-2 border-white shadow-sm flex items-center justify-center text-xs font-bold text-slate-500">USER</div>
                         </div>
                     </header>
 
-                    {/* 同步中遮罩 */}
                     {isSyncing && (
-                        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md">
-                            <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl flex flex-col items-center max-w-sm text-center">
-                                <div className="relative mb-6">
-                                    <Icon name="refresh-cw" className="w-16 h-16 text-blue-600 animate-spin" />
-                                    <Icon name="database" className="w-6 h-6 text-slate-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                                </div>
-                                <h3 className="text-xl font-black text-slate-800 mb-2">正在連接全國法規資料庫</h3>
-                                <p className="text-sm text-slate-500">比對最新公布日期與條文內容內容...</p>
-                                <div className="mt-6 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                    <div className="bg-blue-600 h-full animate-progress" style={{ width: '60%' }}></div>
-                                </div>
+                        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/70 backdrop-blur-md text-center">
+                            <div className="bg-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden">
+                                <div className="scan-line absolute inset-0"></div>
+                                <i className="fas fa-sync-alt text-6xl text-blue-600 animate-spin mb-4"></i>
+                                <h3 className="text-xl font-black text-slate-800">正在同步最新法規數據...</h3>
+                                <p className="text-slate-400 mt-2 text-sm font-bold">正在從全國法規資料庫獲取最新條文全文</p>
                             </div>
                         </div>
                     )}
 
-                    <main className="flex-1 overflow-y-auto p-8">
+                    <main className="flex-1 p-8 overflow-y-auto bg-slate-50/50">
                         <div className="max-w-6xl mx-auto">
-                            {activeTab === 'monitor' && (
-                                <div className="space-y-6">
-                                    <div className="flex justify-between items-end mb-4">
-                                        <div>
-                                            <h2 className="text-3xl font-black text-slate-800 flex items-center gap-3">
-                                                <Icon name="layout-dashboard" className="w-8 h-8 text-blue-600" /> 全國法規監控看板
-                                            </h2>
-                                            <p className="text-slate-500 font-medium mt-1">系統自動追蹤法規異動，發現版本落差時將主動提醒</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-5">
-                                        {latestUpdates.map((law) => {
-                                            const hasUpdate = law.internalPublishDate !== law.remotePublishDate;
-                                            return (
-                                                <div key={law.id} className={`bg-white p-6 rounded-[2rem] border-2 transition-all relative overflow-hidden ${hasUpdate ? 'border-orange-100 bg-orange-50/10' : 'border-slate-100'}`}>
-                                                    {hasUpdate && (
-                                                        <div className="absolute top-0 right-0 bg-orange-500 text-white px-6 py-1 rounded-bl-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                                                            <Icon name="zap" className="w-3 h-3 fill-current" /> Version Conflict Detected
+                            {activeTab === 'monitor' ? (
+                                <div className="fade-in pt-4">
+                                    <div className="grid grid-cols-1 gap-6">
+                                        {initialLaws.map((law, index) => (
+                                            <div 
+                                                key={law.id} 
+                                                className="p-6 rounded-3xl transition-all flex items-center justify-between law-card-glow"
+                                            >
+                                                <div className="flex gap-5 items-center">
+                                                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0 bg-orange-500 text-white shadow-lg">
+                                                        <span className="text-sm font-black">{index + 1}</span>
+                                                    </div>
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 className="font-black text-lg text-slate-800 tracking-tight leading-snug max-w-xl">
+                                                                {law.name}
+                                                            </h3>
+                                                            <span className="text-[9px] font-black bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                                {law.type}
+                                                            </span>
                                                         </div>
-                                                    )}
-                                                    <div className="flex justify-between items-center relative z-10">
-                                                        <div className="flex gap-6 items-start">
-                                                            <div className={`p-5 rounded-2xl shadow-sm ${hasUpdate ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                                                                <Icon name="file-text" className="w-8 h-8" />
-                                                            </div>
-                                                            <div>
-                                                                <div className="flex items-center gap-3">
-                                                                    <h3 className="font-black text-slate-800 text-2xl tracking-tighter">{law.name}</h3>
-                                                                    <span className={`px-2 py-0.5 text-[10px] font-black rounded uppercase ${hasUpdate ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-400'}`}>{law.type}</span>
-                                                                </div>
-                                                                <p className="text-sm text-slate-500 mt-1 font-medium italic">最近一次異動說明：{law.updateNote}</p>
-                                                                <div className="flex gap-6 mt-5">
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">系統內部存檔</span>
-                                                                        <div className="flex items-center gap-2 text-sm font-black text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
-                                                                            <Icon name="calendar" className="w-4 h-4 text-slate-400" /> {law.internalPublishDate}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="flex flex-col">
-                                                                        <span className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${hasUpdate ? 'text-orange-500' : 'text-slate-400'}`}>
-                                                                            {hasUpdate ? '發現外部最新' : '外部同步日期'}
-                                                                        </span>
-                                                                        <div className={`flex items-center gap-2 text-sm font-black px-3 py-1.5 rounded-lg border shadow-sm ${hasUpdate ? 'bg-white border-orange-500 text-orange-600 animate-pulse' : 'bg-white border-slate-200 text-slate-600'}`}>
-                                                                            <Icon name="globe" className={`w-4 h-4 ${hasUpdate ? 'text-orange-500' : 'text-slate-300'}`} /> {law.remotePublishDate}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex flex-col items-end gap-3">
-                                                            <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black border ${hasUpdate ? 'bg-orange-50 text-orange-600 border-orange-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>
-                                                                <Icon name={hasUpdate ? 'alert-triangle' : 'check'} className="w-3.5 h-3.5" />
-                                                                {hasUpdate ? '建議立即辨識' : '已是最新版本'}
-                                                            </div>
-                                                            <button 
-                                                                onClick={() => handleIdentify(law)}
-                                                                className={`flex items-center gap-3 px-8 py-4 rounded-2xl text-base font-black shadow-lg transition-all active:scale-95 ${hasUpdate ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200' : 'bg-slate-800 text-white hover:bg-slate-900 shadow-slate-200'}`}
-                                                            >
-                                                                啟動智能辨識 <Icon name="arrow-right" className="w-5 h-5" />
-                                                            </button>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">最新公佈日期：</span>
+                                                            <span className="text-xs font-black tracking-tight text-orange-600">
+                                                                {law.remoteDate}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'compare' && selectedLaw && (
-                                <div className="space-y-6">
-                                    <button onClick={() => setActiveTab('monitor')} className="flex items-center gap-2 text-sm font-black text-slate-400 hover:text-blue-600 transition-all">
-                                        <Icon name="arrow-left" className="w-4 h-4" /> 返回監控列表
-                                    </button>
-
-                                    <div className="bg-white rounded-[3rem] border border-slate-200 shadow-2xl overflow-hidden">
-                                        <div className="p-12 bg-gradient-to-br from-slate-50 to-white border-b border-slate-100 flex justify-between items-start">
-                                            <div>
-                                                <h2 className="text-4xl font-black text-slate-800 tracking-tighter mb-4">{selectedLaw.name}</h2>
-                                                <div className="flex items-center gap-4">
-                                                    <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 flex flex-col shadow-sm">
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase">內部存檔</span>
-                                                        <span className="text-sm font-black text-slate-700">{selectedLaw.internalPublishDate}</span>
-                                                    </div>
-                                                    <Icon name="arrow-right" className="text-slate-300" />
-                                                    <div className="bg-orange-50 px-4 py-2 rounded-xl border border-orange-200 flex flex-col shadow-sm">
-                                                        <span className="text-[10px] font-black text-orange-400 uppercase">全國最新</span>
-                                                        <span className="text-sm font-black text-orange-700">{selectedLaw.remotePublishDate}</span>
+                                                <div className="flex items-center gap-3 shrink-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <button 
+                                                            onClick={() => startSync(law)}
+                                                            className="px-8 py-3 rounded-xl font-black text-xs transition-all active:scale-95 bg-blue-600 text-white shadow-lg hover:bg-blue-700"
+                                                        >
+                                                            啟動鑑別
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => startSync(law)}
+                                                            className="px-8 py-3 rounded-xl font-black text-xs transition-all active:scale-95 bg-orange-500 text-white shadow-lg hover:bg-orange-600"
+                                                        >
+                                                            查看詳情
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
-                                            {selectedLaw.hasDiff && (
-                                                <div className="bg-red-50 text-red-600 p-6 rounded-[2rem] border-2 border-red-100 max-w-xs text-xs font-bold leading-relaxed">
-                                                    <div className="flex items-center gap-2 mb-2 font-black uppercase text-sm">
-                                                        <Icon name="alert-triangle" /> 發現條文差異
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="fade-in space-y-6">
+                                    <button onClick={() => setActiveTab('monitor')} className="flex items-center gap-2 text-sm font-black text-slate-400 hover:text-blue-600 transition-all mb-4">
+                                        <i className="fas fa-arrow-left"></i> 返回清單列表
+                                    </button>
+                                    <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden">
+                                        <div className="bg-gradient-to-r from-slate-50 to-white p-10 border-b border-slate-100 flex justify-between items-end">
+                                            <div>
+                                                <h2 className="text-3xl font-black text-slate-800 tracking-tighter mb-4 max-w-2xl">{selectedLaw?.name}</h2>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 shadow-sm">
+                                                        <div className="text-[10px] font-black text-blue-500 uppercase">全國最新公佈日期</div>
+                                                        <div className="text-sm font-black text-blue-700">{selectedLaw?.remoteDate}</div>
                                                     </div>
-                                                    經由比對，共有 2 處條文異動。建議儘速完成適用性評估。
                                                 </div>
-                                            )}
+                                            </div>
+                                            <div className="bg-orange-50 p-5 rounded-3xl border border-orange-100 max-w-xs text-[11px] font-bold text-orange-700 leading-relaxed">
+                                                <i className="fas fa-microchip mr-2 text-orange-500"></i> AI 已同步條文全文，請確認下方具體變動點。
+                                            </div>
                                         </div>
-
-                                        <div className="p-12 space-y-16">
-                                            {getComparisonData(selectedLaw.name, selectedLaw.hasDiff).map((item, index) => (
-                                                <div key={index} className="space-y-6">
-                                                    <h3 className="text-2xl font-black text-slate-800 flex items-center gap-4">
-                                                        <span className="bg-slate-900 text-white w-10 h-10 rounded-xl flex items-center justify-center text-sm shadow-lg">{index + 1}</span>
+                                        <div className="p-10 space-y-12 bg-white">
+                                            {getComparisonData(selectedLaw?.name).map((item, idx) => (
+                                                <div key={idx} className="space-y-4">
+                                                    <h4 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                                                        <span className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xs font-black">{idx + 1}</span>
                                                         {item.article}
-                                                    </h3>
-                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                                        <div className="p-8 bg-slate-50 rounded-[2.5rem] border-2 border-slate-100 text-slate-500 text-sm italic">
-                                                            <div className="text-[10px] font-black mb-2 flex items-center gap-1 uppercase tracking-wider"><Icon name="database" className="w-3 h-3"/> 內部版本</div>
-                                                            {item.oldText}
-                                                        </div>
-                                                        <div className="p-8 bg-white rounded-[2.5rem] border-2 border-blue-600 shadow-xl shadow-blue-50 text-slate-800 font-bold relative overflow-hidden">
-                                                            <div className="absolute top-0 right-0 bg-blue-600 text-white px-4 py-1 rounded-bl-2xl text-[10px] font-black uppercase tracking-widest">New Content</div>
-                                                            <div className="text-[10px] font-black mb-2 flex items-center gap-1 text-blue-600 uppercase tracking-wider"><Icon name="globe" className="w-3 h-3"/> 最新版本</div>
-                                                            {item.newText}
-                                                        </div>
+                                                    </h4>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                        <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 text-slate-400 text-sm italic">{item.oldText}</div>
+                                                        <div className="p-6 bg-white rounded-[2rem] border-2 border-blue-600 shadow-xl text-slate-800 text-sm font-bold leading-relaxed">{item.newText}</div>
                                                     </div>
-                                                    <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 flex items-start gap-4 shadow-sm">
-                                                        <Icon name="zap" className="text-emerald-500 fill-current p-1 bg-emerald-100 rounded-lg" />
-                                                        <div>
-                                                            <p className="text-[10px] font-black text-emerald-600 uppercase mb-1 tracking-widest">AI 解讀分析</p>
-                                                            <p className="text-sm font-bold text-emerald-900 leading-relaxed">{item.analysis}</p>
-                                                        </div>
+                                                    <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 flex items-start gap-4 text-sm font-bold text-emerald-900">
+                                                        <div className="bg-emerald-200 text-emerald-600 w-10 h-10 rounded-xl flex items-center justify-center shrink-0"><i className="fas fa-comment-dots"></i></div>
+                                                        <div><div className="text-[10px] font-black text-emerald-600 uppercase mb-1">AI 專家解讀與建議</div>{item.analysis}</div>
                                                     </div>
                                                 </div>
                                             ))}
+                                        </div>
+                                        <div className="p-10 bg-slate-50 border-t border-slate-100 flex justify-end gap-4">
+                                            <button className="px-8 py-3 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-sm">列印鑑別報告</button>
+                                            <button className="px-8 py-3 rounded-2xl bg-blue-600 text-white font-black text-sm shadow-lg hover:bg-blue-700">確認更新並保存</button>
                                         </div>
                                     </div>
                                 </div>
@@ -297,9 +247,13 @@
                         </div>
                     </main>
 
-                    <footer className="bg-white border-t border-slate-200 px-8 py-4 text-[10px] font-black text-slate-400 flex justify-between tracking-widest">
-                        <div>REAL-TIME MONITORING ACTIVE | API STATUS: OK</div>
-                        <div className="italic text-slate-300">INTELLIGENT COMPLIANCE ENGINE v3.0</div>
+                    <footer className="px-8 py-4 bg-white border-t border-slate-100 flex justify-between items-center text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                        <div>資料介接：全國法規資料庫 API</div>
+                        <div className="flex items-center gap-2">
+                            <span>Safety AI 職安法規自動化監控系統 v4.0</span>
+                            <span className="text-slate-200">|</span>
+                            <span className="text-slate-400">Developed by Sam Sun</span>
+                        </div>
                     </footer>
                 </div>
             );

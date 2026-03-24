@@ -62,9 +62,11 @@
             pointer-events: none;
         }
 
+        /* --- 新增：對照表文字標記樣式 --- */
         ins { background: #e6ffed; text-decoration: none; border-bottom: 2px solid #059669; font-weight: 500; color: #065f46; }
         del { background: #ffeef0; color: #991b1b; text-decoration: line-through; }
 
+        /* --- 新增：列印媒體查詢 --- */
         @media print {
             header, footer, .developer-tag, .back-nav-btn, .action-buttons, .sidebar-mock {
                 display: none !important;
@@ -90,7 +92,7 @@
         const App = () => {
             const [activeTab, setActiveTab] = useState('monitor');
             const [isSyncing, setIsSyncing] = useState(false);
-            const [syncText, setSyncText] = useState('正在執行鑑別程序...');
+            const [syncText, setSyncText] = useState('正在自動鑑別條文...');
             const [selectedLaw, setSelectedLaw] = useState(null);
             const [searchQuery, setSearchQuery] = useState('');
             const [filterType, setFilterType] = useState('全部');
@@ -129,6 +131,7 @@
                 { id: 28, name: '缺氧症預防規則', type: '法規命令', remoteDate: '2014-06-26', localCheckDate: UNIFIED_DATE }
             ]);
 
+            // 模擬的對照資料
             const diffData = [
                 { article: "第 32 條", old: "雇主對勞工應施以從事工作及預防災變所必要之<del>安全衛生</del>教育訓練。", new: "雇主對勞工應施以從事工作及預防災變所必要之<ins>職業安全衛生</ins>教育訓練。", note: "文字修正" },
                 { article: "第 45 條", old: "(無舊條文內容)", new: "<ins>前項所定之監測，應由經中央主管機關認認可之作業環境監測機構辦理。但經中央主管機關指定者，得由事業單位自行辦理。</ins>", note: "新增條款" },
@@ -157,12 +160,19 @@
                 const worksheet = XLSX.utils.json_to_sheet(exportData);
                 const workbook = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(workbook, worksheet, "法規鑑別總表");
+                
+                const wscols = [
+                    {wch: 6}, {wch: 40}, {wch: 12}, {wch: 10}, {wch: 18}, {wch: 18}, {wch: 12}, {wch: 25}
+                ];
+                worksheet['!cols'] = wscols;
+
                 XLSX.writeFile(workbook, `職安法規鑑別總表_${year}_Q${quarter}.xlsx`);
             };
 
             const handleAllSync = () => {
-                setSyncText('正在批次執行立即鑑別同步...');
+                setSyncText('正在批次執行全法規鑑別同步...');
                 setIsSyncing(true);
+                
                 setTimeout(() => {
                     const todayStr = TODAY.toISOString().split('T')[0];
                     setLaws(prev => prev.map(law => ({
@@ -170,16 +180,38 @@
                         localCheckDate: todayStr
                     })));
                     setIsSyncing(false);
-                }, 1500);
+                }, 2000);
             };
 
             const getLawStatus = (remoteDate, localDate) => {
                 const rDate = new Date(remoteDate);
                 const lDate = localDate ? new Date(localDate) : new Date(0);
-                if (rDate > lDate) return { code: 'danger', color: 'bg-rose-500', text: '需重新鑑別', icon: 'fa-triangle-exclamation' };
+                
+                if (rDate > lDate) return {
+                    code: 'danger',
+                    color: 'bg-rose-500',
+                    text: '需重新鑑別',
+                    icon: 'fa-triangle-exclamation',
+                    shadow: 'shadow-rose-200'
+                };
+                
                 const diffTime = TODAY - lDate;
-                if (diffTime / (1000 * 60 * 60 * 24) > 365) return { code: 'warning', color: 'bg-amber-500', text: '例行性檢視', icon: 'fa-clock' };
-                return { code: 'success', color: 'bg-emerald-600', text: '鑑別完成', icon: 'fa-circle-check' };
+                const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                if (diffDays > 365) return {
+                    code: 'warning',
+                    color: 'bg-amber-500',
+                    text: '例行性檢視',
+                    icon: 'fa-clock',
+                    shadow: 'shadow-amber-200'
+                };
+
+                return {
+                    code: 'success',
+                    color: 'bg-emerald-600',
+                    text: '鑑別完成',
+                    icon: 'fa-circle-check',
+                    shadow: 'shadow-emerald-600/30'
+                };
             };
 
             const filteredLaws = useMemo(() => {
@@ -190,18 +222,21 @@
                 });
             }, [searchQuery, filterType, laws]);
 
-            const handleImmediateIdentify = (lawId) => {
-                setSyncText('正在執行立即鑑別程序...');
+            const handleAutoSync = (lawId) => {
+                setSyncText('正在自動鑑別條文...');
                 setIsSyncing(true);
                 setTimeout(() => {
                     setLaws(prev => prev.map(law => {
                         if (law.id === lawId) {
-                            return { ...law, localCheckDate: TODAY.toISOString().split('T')[0] };
+                            return {
+                                ...law,
+                                localCheckDate: TODAY.toISOString().split('T')[0]
+                            };
                         }
                         return law;
                     }));
                     setIsSyncing(false);
-                }, 1000);
+                }, 1200);
             };
 
             const startSync = (law) => {
@@ -211,7 +246,7 @@
                     setSelectedLaw(law);
                     setActiveTab('compare');
                     setIsSyncing(false);
-                }, 800);
+                }, 1000);
             };
 
             return (
@@ -234,11 +269,22 @@
                         </div>
                         <div className="flex items-center gap-4">
                             <button onClick={handleAllSync} className="hidden lg:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black hover:bg-indigo-700 transition-all shadow-md active:scale-95 border-b-2 border-indigo-900">
-                                <i className="fas fa-bolt"></i> 一鍵立即鑑別
+                                <i className="fas fa-bolt"></i> 一鍵同步鑑別
                             </button>
                             <button onClick={handleExport} className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-black hover:bg-slate-900 transition-all shadow-md active:scale-95">
                                 <i className="fas fa-file-export"></i> 匯出鑑別紀錄總表
                             </button>
+                            <div className="hidden md:flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                                {['全部', '法律', '法規命令', '行政規則'].map(type => (
+                                    <button
+                                        key={type}
+                                        onClick={() => setFilterType(type)}
+                                        className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${filterType === type ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                    >
+                                        {type}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </header>
 
@@ -249,7 +295,7 @@
                                 <div className="relative z-10">
                                     <i className="fas fa-circle-notch text-5xl text-blue-600 animate-spin mb-6"></i>
                                     <h3 className="text-xl font-black text-slate-800">{syncText}</h3>
-                                    <p className="text-slate-400 mt-2 text-sm font-medium">串接全國法規資料庫並更新鑑別狀態</p>
+                                    <p className="text-slate-400 mt-2 text-sm font-medium">串接全國法規資料庫並同步至公司內部清單</p>
                                 </div>
                             </div>
                         </div>
@@ -270,12 +316,14 @@
                                                                 <span className="text-xs font-black tracking-tight">{index + 1}</span>
                                                             </div>
                                                         </div>
+
                                                         <div className="flex flex-col min-w-0 flex-1">
                                                             <div className="flex items-center gap-2 flex-wrap mb-1.5">
                                                                 <h3 className="font-black text-slate-800 truncate text-base">{law.name}</h3>
                                                                 <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md border border-slate-200 uppercase">{law.type}</span>
                                                                 {status.code === 'danger' && <span className="new-badge text-[9px] font-black bg-rose-50 text-rose-600 px-2 py-0.5 rounded-md border border-rose-200">法規已異動</span>}
                                                             </div>
+
                                                             <div className="flex flex-wrap items-center gap-y-2">
                                                                 <div className="flex flex-col min-w-[120px]">
                                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">全國法規公佈日</span>
@@ -284,9 +332,11 @@
                                                                 <div className="w-px h-6 bg-slate-200 mx-4 hidden sm:block"></div>
                                                                 <div className="flex flex-col min-w-[120px]">
                                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">公司最後鑑別日</span>
-                                                                    <span className={`text-xs font-black ${status.code === 'danger' ? 'text-rose-500' : 'text-emerald-700'}`}>{law.localCheckDate}</span>
+                                                                    <span className={`text-xs font-black ${status.code === 'danger' ? 'text-rose-500' : 'text-emerald-700'}`}>
+                                                                        {law.localCheckDate}
+                                                                    </span>
                                                                 </div>
-                                                                <div className="ml-4">
+                                                                <div className="ml-4 flex items-center gap-1.5">
                                                                     <span className={`text-[10px] font-black px-3 py-1 rounded shadow-sm ${status.code === 'success' ? 'bg-emerald-600 text-white' : status.code === 'danger' ? 'bg-rose-50 text-rose-500' : 'bg-slate-50 text-slate-400'}`}>
                                                                         {status.text}
                                                                     </span>
@@ -294,13 +344,14 @@
                                                             </div>
                                                         </div>
                                                     </div>
+
                                                     <div className="flex items-center gap-3 shrink-0 ml-16 lg:ml-0">
                                                         <button onClick={() => startSync(law)} className="flex-1 md:flex-none px-5 py-3 rounded-xl font-black text-xs bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95">查看詳情</button>
                                                         <button
-                                                            onClick={() => handleImmediateIdentify(law.id)}
+                                                            onClick={() => handleAutoSync(law.id)}
                                                             className={`flex-1 md:flex-none px-8 py-3 rounded-xl font-black text-xs text-white shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center ${status.code === 'danger' ? 'bg-rose-600 shadow-rose-600/20 hover:bg-rose-700 animate-pulse' : 'bg-blue-600 shadow-blue-600/20 hover:bg-blue-700'}`}
                                                         >
-                                                            立即鑑別
+                                                            {status.code === 'danger' ? '立即鑑別' : '自動鑑別'}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -313,11 +364,14 @@
                                     <button onClick={() => setActiveTab('monitor')} className="back-nav-btn flex items-center gap-2 text-sm font-black text-slate-500 hover:text-blue-600 transition-all group">
                                         <i className="fas fa-chevron-left transition-transform group-hover:-translate-x-1"></i> 返回監控清單
                                     </button>
+                                    
                                     <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-200 overflow-hidden workbench-card">
+                                        {/* 列印專用標頭 */}
                                         <div className="print-header">
                                             <h1 style={{fontSize: '24pt', fontWeight: '900'}}>{selectedLaw?.name} - 合規性鑑別報告</h1>
                                             <p>鑑別日期：{TODAY.toISOString().split('T')[0]} | 狀態：{getLawStatus(selectedLaw?.remoteDate, selectedLaw?.localCheckDate).text}</p>
                                         </div>
+
                                         <div className="p-10 border-b border-slate-100 bg-slate-50/50">
                                             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                                                 <div className="space-y-4">
@@ -325,6 +379,16 @@
                                                         <i className="fas fa-microchip"></i> 鑑別工作台
                                                     </div>
                                                     <h2 className="text-3xl font-black text-slate-800 tracking-tight leading-tight">{selectedLaw?.name}</h2>
+                                                    <div className="flex gap-4">
+                                                        <div className="px-3 py-1 bg-white border border-slate-200 rounded-lg shadow-sm">
+                                                            <span className="text-[9px] font-bold text-slate-400 block uppercase mb-0.5">最新公佈日</span>
+                                                            <span className="text-xs font-black text-slate-700">{selectedLaw?.remoteDate}</span>
+                                                        </div>
+                                                        <div className="px-3 py-1 bg-white border border-slate-200 rounded-lg shadow-sm">
+                                                            <span className="text-[9px] font-bold text-slate-400 block uppercase mb-0.5">前次鑑別日</span>
+                                                            <span className="text-xs font-black text-emerald-600">{selectedLaw?.localCheckDate}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <div className="flex gap-3 action-buttons">
                                                     <button onClick={() => window.print()} className="px-6 py-3 rounded-xl bg-white border border-slate-200 text-slate-600 font-black text-sm transition-all hover:bg-slate-50 active:scale-95">
@@ -332,22 +396,34 @@
                                                     </button>
                                                     <button
                                                         onClick={() => {
-                                                            handleImmediateIdentify(selectedLaw.id);
+                                                            handleAutoSync(selectedLaw.id);
                                                             setActiveTab('monitor');
                                                         }}
                                                         className="px-6 py-3 rounded-xl bg-blue-600 text-white font-black text-sm shadow-lg hover:bg-blue-700 transition-all active:scale-95"
                                                     >
-                                                        立即鑑別並更新
+                                                        確認鑑別並更新日期
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="p-10 bg-white">
+                                        
+                                        <div className="p-10 space-y-12 bg-white">
+                                            <div className="flex items-center gap-4 p-6 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                                                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 shadow-inner">
+                                                    <i className="fas fa-check-circle text-xl"></i>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-sm font-black text-emerald-900 leading-relaxed">合規確認：本單位已於 {selectedLaw?.localCheckDate} 完成最新條文鑑別。</p>
+                                                    <p className="text-xs text-emerald-700/70 font-bold leading-relaxed italic">AI 分析建議：目前條文無重大變更影響公司現有作業，建議維持現行管理計畫。</p>
+                                                </div>
+                                            </div>
+
+                                            {/* --- 條文對照表格區塊 --- */}
                                             <div className="space-y-6">
                                                 <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
                                                     <i className="fas fa-list-check text-blue-500"></i> 新舊條文對照表
                                                 </h3>
-                                                <div className="overflow-hidden border border-slate-200 rounded-2xl">
+                                                <div className="overflow-hidden border border-slate-200 rounded-2xl shadow-sm">
                                                     <table className="w-full text-left border-collapse">
                                                         <thead>
                                                             <tr className="bg-slate-50 border-b border-slate-200">
@@ -364,12 +440,20 @@
                                                                     <td className="p-4 text-sm text-slate-500 leading-relaxed align-top italic" dangerouslySetInnerHTML={{__html: item.old}}></td>
                                                                     <td className="p-4 text-sm text-slate-800 font-medium leading-relaxed align-top" dangerouslySetInnerHTML={{__html: item.new}}></td>
                                                                     <td className="p-4 align-top">
-                                                                        <span className="text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100">{item.note}</span>
+                                                                        <span className="text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100">
+                                                                            {item.note}
+                                                                        </span>
                                                                     </td>
                                                                 </tr>
                                                             ))}
                                                         </tbody>
                                                     </table>
+                                                </div>
+                                                <div className="flex justify-center py-6">
+                                                     <div className="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase">
+                                                        <i className="fas fa-info-circle"></i>
+                                                        以上對照僅顯示有變動之條文，其餘條文維持不變。
+                                                     </div>
                                                 </div>
                                             </div>
                                         </div>

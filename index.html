@@ -143,19 +143,7 @@
             const [filterType, setFilterType] = useState('全部');
             const [currentTime, setCurrentTime] = useState(new Date());
 
-            const getNowString = (withTime = false) => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    if (!withTime) return `${y}-${m}-${d}`;
-    
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    return `${y}-${m}-${d} ${hh}:${mm}`;
-};
-
-const TODAY_STR = getNowString(); // 保留這個變數給原本的邏輯使用
+            const TODAY_STR = '2026-03-24';
             const UNIFIED_INITIAL_DATE = '2026-03-02';
 
             const [laws, setLaws] = useState([
@@ -215,32 +203,22 @@ const TODAY_STR = getNowString(); // 保留這個變數給原本的邏輯使用
             };
 
             const handleAllSync = () => {
-    setSyncText('正在執行全法規資料庫即時同步...');
-    setIsSyncing(true);
-    const nowTimestamp = getNowString(true); // 取得包含時間的紀錄
-    
-    setTimeout(() => {
-        setLaws(prev => prev.map(law => ({ 
-            ...law, 
-            localCheckDate: nowTimestamp 
-        })));
-        setIsSyncing(false);
-    }, 2000);
-};
+                setSyncText('正在批次執行全法規鑑別同步...');
+                setIsSyncing(true);
+                setTimeout(() => {
+                    setLaws(prev => prev.map(law => ({ ...law, localCheckDate: TODAY_STR })));
+                    setIsSyncing(false);
+                }, 2000);
+            };
 
-// --- 完整覆蓋 handleSingleSync ---
-const handleSingleSync = (lawId) => {
-    setSyncText('系統正在寫入即時鑑別紀錄...');
-    setIsSyncing(true);
-    const nowTimestamp = getNowString(true);
-    
-    setTimeout(() => {
-        setLaws(prev => prev.map(law => 
-            law.id === lawId ? { ...law, localCheckDate: nowTimestamp } : law
-        ));
-        setIsSyncing(false);
-    }, 1000);
-};
+            const handleSingleSync = (lawId) => {
+                setSyncText('正在更新該項法規鑑別紀錄...');
+                setIsSyncing(true);
+                setTimeout(() => {
+                    setLaws(prev => prev.map(law => law.id === lawId ? { ...law, localCheckDate: TODAY_STR } : law));
+                    setIsSyncing(false);
+                }, 1000);
+            };
 
             const handleExport = () => {
                 const quarter = Math.ceil((new Date(TODAY_STR).getMonth() + 1) / 3);

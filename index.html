@@ -54,18 +54,11 @@
             border-color: #3b82f6;
         }
 
-        .developer-tag {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            z-index: 100;
-        }
-
         ins { background: #e6ffed; text-decoration: none; border-bottom: 2px solid #059669; font-weight: 500; color: #065f46; padding: 0 2px; }
         del { background: #ffeef0; color: #991b1b; text-decoration: line-through; padding: 0 2px; }
 
         @media print {
-            header, footer, .developer-tag, .back-nav-btn, .action-buttons, .sidebar-mock, .time-display-box {
+            header, footer, .back-nav-btn, .action-buttons, .sidebar-mock, .time-display-box {
                 display: none !important;
             }
             body { background-color: white !important; }
@@ -140,7 +133,6 @@
             const [filterType, setFilterType] = useState('全部');
             const [currentTime, setCurrentTime] = useState(new Date());
 
-            // --- 核心更新功能：自動獲取今日日期 ---
             const getTodayStr = () => {
                 const now = new Date();
                 return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -148,7 +140,6 @@
 
             const UNIFIED_INITIAL_DATE = '2026-03-02';
 
-            // --- 核心更新功能：從 LocalStorage 讀取或初始化數據 ---
             const [laws, setLaws] = useState(() => {
                 const savedLaws = localStorage.getItem('osh_laws_data');
                 if (savedLaws) return JSON.parse(savedLaws);
@@ -185,7 +176,6 @@
                 ];
             });
 
-            // --- 核心更新功能：當數據變動時自動儲存至永久空間 ---
             useEffect(() => {
                 localStorage.setItem('osh_laws_data', JSON.stringify(laws));
             }, [laws]);
@@ -219,7 +209,7 @@
                 setSyncText('正在批次執行全法規鑑別同步...');
                 setIsSyncing(true);
                 setTimeout(() => {
-                    const today = getTodayStr(); // 同步當前時間
+                    const today = getTodayStr();
                     setLaws(prev => prev.map(law => ({ ...law, localCheckDate: today })));
                     setIsSyncing(false);
                 }, 2000);
@@ -229,7 +219,7 @@
                 setSyncText('正在更新該項法規鑑別紀錄...');
                 setIsSyncing(true);
                 setTimeout(() => {
-                    const today = getTodayStr(); // 同步當前時間
+                    const today = getTodayStr();
                     setLaws(prev => prev.map(law => law.id === lawId ? { ...law, localCheckDate: today } : law));
                     setIsSyncing(false);
                 }, 1000);
@@ -465,37 +455,59 @@
                                                     <i className="fas fa-check-circle text-3xl"></i>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <p className="text-lg font-black text-emerald-900 leading-relaxed">合規確認：本單位已完成最新條文鑑別。</p>
-                                                    <p className="text-sm text-emerald-700/80 font-bold leading-relaxed italic">AI 分析建議：{currentLawData?.ai}</p>
+                                                    <h4 className="text-lg font-black text-emerald-900">自動比對完成</h4>
+                                                    <p className="text-emerald-700 font-medium">系統已完成與全國法規資料庫之最新條文比對，下方列出本次異動細節：</p>
                                                 </div>
                                             </div>
-                                            <div className="space-y-8">
-                                                <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-                                                    <i className="fas fa-list-check text-blue-500"></i> 新舊條文對照表
-                                                </h3>
-                                                <div className="overflow-hidden border border-slate-200 rounded-3xl">
-                                                    <table className="w-full text-left border-collapse">
-                                                        <thead>
-                                                            <tr className="bg-slate-50 border-b border-slate-200">
-                                                                <th className="px-8 py-6 text-sm font-black text-slate-500 uppercase tracking-wider w-32">條號</th>
-                                                                <th className="px-8 py-6 text-sm font-black text-slate-500 uppercase tracking-wider">修訂前內容</th>
-                                                                <th className="px-8 py-6 text-sm font-black text-slate-500 uppercase tracking-wider">修訂後內容</th>
-                                                                <th className="px-8 py-6 text-sm font-black text-slate-500 uppercase tracking-wider w-40">異動重點</th>
+
+                                            <div className="overflow-hidden border border-slate-200 rounded-3xl shadow-sm">
+                                                <table className="w-full text-left border-collapse">
+                                                    <thead>
+                                                        <tr className="bg-slate-50 border-b border-slate-200">
+                                                            <th className="px-8 py-5 text-xs font-black text-slate-500 uppercase tracking-widest w-24">項次</th>
+                                                            <th className="px-8 py-5 text-xs font-black text-slate-500 uppercase tracking-widest w-32">條號</th>
+                                                            <th className="px-8 py-5 text-xs font-black text-slate-500 uppercase tracking-widest">條文比對 (舊版 vs 新版)</th>
+                                                            <th className="px-8 py-5 text-xs font-black text-slate-500 uppercase tracking-widest w-40">異動屬性</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {currentLawData?.rows.map((row, idx) => (
+                                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                                                <td className="px-8 py-6 font-bold text-slate-400">{idx + 1}</td>
+                                                                <td className="px-8 py-6 font-black text-blue-600">{row.no}</td>
+                                                                <td className="px-8 py-6">
+                                                                    <div className="space-y-4">
+                                                                        <div className="text-slate-400 text-sm bg-slate-50 p-3 rounded-lg border-l-4 border-slate-200 line-through">{row.old}</div>
+                                                                        <div className="text-slate-800 text-base font-medium p-3 rounded-lg border-l-4 border-blue-500 bg-blue-50/30" dangerouslySetInnerHTML={{ __html: row.new }}></div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-8 py-6">
+                                                                    <span className="px-4 py-1.5 bg-amber-100 text-amber-700 rounded-full text-xs font-black">{row.note}</span>
+                                                                </td>
                                                             </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-slate-100">
-                                                            {currentLawData?.rows.map((row, idx) => (
-                                                                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                                                    <td className="px-8 py-8 text-sm font-black text-slate-800 bg-slate-50/30">{row.no}</td>
-                                                                    <td className="px-8 py-8 text-sm text-slate-500 leading-relaxed font-medium">{row.old}</td>
-                                                                    <td className="px-8 py-8 text-sm text-slate-800 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: row.new }}></td>
-                                                                    <td className="px-8 py-8">
-                                                                        <span className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-black border border-blue-100 inline-block">{row.note}</span>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <div className="p-10 bg-slate-900 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
+                                                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                                                    <i className="fas fa-robot text-8xl"></i>
+                                                </div>
+                                                <div className="relative z-10 space-y-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/50">
+                                                            <i className="fas fa-wand-magic-sparkles text-lg"></i>
+                                                        </div>
+                                                        <h4 className="text-xl font-black tracking-tight">AI 合規性自動建議</h4>
+                                                    </div>
+                                                    <p className="text-slate-300 leading-relaxed text-lg font-medium italic">
+                                                        "{currentLawData?.ai}"
+                                                    </p>
+                                                    <div className="pt-4 flex items-center gap-3 text-xs font-black text-blue-400 uppercase tracking-widest">
+                                                        <span className="w-8 h-px bg-blue-500/50"></span>
+                                                        OSH Smart Analysis Engine
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -505,15 +517,29 @@
                         </div>
                     </main>
 
-                    <div className="developer-tag flex items-center gap-3 bg-white px-5 py-2.5 rounded-2xl shadow-2xl border border-slate-100">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                        <span className="text-xs font-black text-slate-800 uppercase tracking-widest">System Secured</span>
-                    </div>
+                    <footer className="bg-slate-900 border-t border-slate-800 px-10 py-8 text-center space-y-4">
+                        <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8">
+                            <p className="text-slate-400 text-xs font-bold tracking-widest uppercase">
+                                © 2026 職安衛管理部 - 法規智慧監控系統專用介面
+                            </p>
+                            <span className="hidden md:block text-slate-700">|</span>
+                            <div className="flex items-center gap-3 bg-slate-800/50 px-5 py-2 rounded-xl border border-slate-700/50 shadow-inner">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                                <span className="text-slate-300 text-[10px] font-black tracking-[0.2em] uppercase">
+                                    System Developer By Sam Sun
+                                </span>
+                            </div>
+                        </div>
+                        <div className="text-[9px] text-slate-600 font-bold tracking-[0.3em] uppercase opacity-50">
+                            Enterprise Compliance Intelligence Engine v4.5.1
+                        </div>
+                    </footer>
                 </div>
             );
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
         root.render(<App />);
     </script>
 </body>

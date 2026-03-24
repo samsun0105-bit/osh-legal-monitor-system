@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>職安法規自動監控與鑑別系統 v4.6 - 永久儲存版</title>
+    <title>職安法規自動監控與鑑別系統 v4.5 - 即時同步版</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -12,18 +12,59 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
-        @keyframes scan { 0% { transform: translateY(-100%); opacity: 0; } 50% { opacity: 0.5; } 100% { transform: translateY(100%); opacity: 0; } }
-        .scan-line { height: 2px; background: linear-gradient(to right, transparent, #3b82f6, transparent); animation: scan 2s linear infinite; }
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes blink { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.95); } }
-        .new-badge { animation: blink 1.5s infinite; }
-        .law-card-glow { border: 1px solid #e2e8f0; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .law-card-glow:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); border-color: #3b82f6; }
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
+        }
+        @keyframes scan {
+            0% { transform: translateY(-100%); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: translateY(100%); opacity: 0; }
+        }
+        .scan-line {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #3b82f6, transparent);
+            animation: scan 2s linear infinite;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.95); }
+        }
+        .new-badge {
+            animation: blink 1.5s infinite;
+        }
+        .law-card-glow {
+            border: 1px solid #e2e8f0;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .law-card-glow:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            border-color: #3b82f6;
+        }
         ins { background: #e6ffed; text-decoration: none; border-bottom: 2px solid #059669; font-weight: 500; color: #065f46; padding: 0 2px; }
         del { background: #ffeef0; color: #991b1b; text-decoration: line-through; padding: 0 2px; }
-        @media print { header, footer, .back-nav-btn, .action-buttons, .time-display-box { display: none !important; } body { background-color: white !important; } .main-container { padding: 0 !important; margin: 0 !important; width: 100% !important; } .workbench-card { border: none !important; box-shadow: none !important; padding: 0 !important; } table { width: 100% !important; border-collapse: collapse !important; } td, th { border: 1px solid #cbd5e1 !important; padding: 12px !important; } @page { size: A4; margin: 1.5cm; } }
+
+        @media print {
+            header, footer, .back-nav-btn, .action-buttons, .time-display-box {
+                display: none !important;
+            }
+            body { background-color: white !important; }
+            .main-container { padding: 0 !important; margin: 0 !important; width: 100% !important; }
+            .workbench-card { border: none !important; box-shadow: none !important; padding: 0 !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            td, th { border: 1px solid #cbd5e1 !important; padding: 12px !important; }
+            @page { size: A4; margin: 1.5cm; }
+        }
     </style>
 </head>
 <body>
@@ -31,17 +72,6 @@
 
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
-
-        const STORAGE_KEY = 'OSH_LAW_DATA_V4';
-
-        const DEFAULT_LAWS = [
-            { id: 1, name: '職業安全衛生法', type: '法律', remoteDate: '2025-12-19', localCheckDate: '2026-03-02' },
-            { id: 2, name: '職業安全衛生法施行細則', type: '法規命令', remoteDate: '2020-02-27', localCheckDate: '2026-03-02' },
-            { id: 3, name: '職業安全衛生管理辦法', type: '法規命令', remoteDate: '2022-01-05', localCheckDate: '2026-03-02' },
-            { id: 4, name: '職業安全衛生設施規則', type: '法規命令', remoteDate: '2024-08-01', localCheckDate: '2026-03-02' },
-            { id: 5, name: '職業安全衛生教育訓練規則', type: '法規命令', remoteDate: '2025-09-04', localCheckDate: '2026-03-02' },
-            { id: 24, name: '勞動基準法', type: '法律', remoteDate: '2024-07-31', localCheckDate: '2026-03-02' }
-        ];
 
         const LAW_DIFF_DATABASE = {
             1: { 
@@ -60,7 +90,6 @@
         };
 
         const getMockDiff = (law) => {
-            if (!law) return { rows: [], ai: '' };
             if (LAW_DIFF_DATABASE[law.id]) return LAW_DIFF_DATABASE[law.id];
             return {
                 rows: [{ no: '第 1 條', old: '原條文內容', new: '新條文內容 <ins>(修正項)</ins>', note: '程序強化' }],
@@ -77,22 +106,7 @@
             const [filterType, setFilterType] = useState('全部');
             const [currentTime, setCurrentTime] = useState(new Date());
 
-            // --- 核心修改：初始化時從 LocalStorage 讀取資料 ---
-            const [laws, setLaws] = useState(() => {
-                const savedData = localStorage.getItem(STORAGE_KEY);
-                return savedData ? JSON.parse(savedData) : DEFAULT_LAWS;
-            });
-
-            // --- 每當 laws 變動時，自動同步到 LocalStorage ---
-            useEffect(() => {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(laws));
-            }, [laws]);
-
-            useEffect(() => {
-                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-                return () => clearInterval(timer);
-            }, []);
-
+            // 取得即時時間字串 (含時分)
             const getLiveTimestamp = () => {
                 const now = new Date();
                 const y = now.getFullYear();
@@ -103,17 +117,34 @@
                 return `${y}-${m}-${d} ${hh}:${mm}`;
             };
 
-            const formatTime = (date) => date.toLocaleString('zh-TW', { hour12: false });
+            const [laws, setLaws] = useState([
+                { id: 1, name: '職業安全衛生法', type: '法律', remoteDate: '2025-12-19', localCheckDate: '2026-03-02' },
+                { id: 2, name: '職業安全衛生法施行細則', type: '法規命令', remoteDate: '2020-02-27', localCheckDate: '2026-03-02' },
+                { id: 3, name: '職業安全衛生管理辦法', type: '法規命令', remoteDate: '2022-01-05', localCheckDate: '2026-03-02' },
+                { id: 4, name: '職業安全衛生設施規則', type: '法規命令', remoteDate: '2024-08-01', localCheckDate: '2026-03-02' },
+                { id: 5, name: '職業安全衛生教育訓練規則', type: '法規命令', remoteDate: '2025-09-04', localCheckDate: '2026-03-02' },
+                { id: 24, name: '勞動基準法', type: '法律', remoteDate: '2024-07-31', localCheckDate: '2026-03-02' }
+            ]);
+
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            const formatTime = (date) => {
+                return date.toLocaleString('zh-TW', { hour12: false });
+            };
 
             const getLawStatus = (remoteDate, localDate) => {
                 const rDate = new Date(remoteDate);
-                const lDate = new Date(localDate.split(' ')[0]); // 只取日期部分比對
+                const lDate = new Date(localDate);
                 if (rDate > lDate) return { code: 'danger', color: 'bg-rose-500', text: '需重新鑑別' };
                 return { code: 'success', color: 'bg-emerald-600', text: '鑑別完成' };
             };
 
+            // 全同步啟動功能
             const handleAllSync = () => {
-                setSyncText('正在執行全法規資料庫即時同步並寫入儲存區...');
+                setSyncText('正在執行全法規資料庫即時同步...');
                 setIsSyncing(true);
                 const timestamp = getLiveTimestamp();
                 
@@ -123,28 +154,18 @@
                 }, 1500);
             };
 
+            // 單一即時鑑別紀錄功能
             const handleSingleSync = (lawId) => {
-                setSyncText('系統正在寫入永久鑑別紀錄...');
+                setSyncText('系統正在寫入即時鑑別紀錄...');
                 setIsSyncing(true);
                 const timestamp = getLiveTimestamp();
                 
                 setTimeout(() => {
-                    setLaws(prev => {
-                        const newLaws = prev.map(law => 
-                            law.id === lawId ? { ...law, localCheckDate: timestamp } : law
-                        );
-                        return newLaws;
-                    });
+                    setLaws(prev => prev.map(law => 
+                        law.id === lawId ? { ...law, localCheckDate: timestamp } : law
+                    ));
                     setIsSyncing(false);
                 }, 800);
-            };
-
-            // 重置功能（可選，方便測試）
-            const handleReset = () => {
-                if(confirm("確定要重置所有紀錄嗎？")) {
-                    setLaws(DEFAULT_LAWS);
-                    localStorage.removeItem(STORAGE_KEY);
-                }
             };
 
             const handleExport = () => {
@@ -185,7 +206,7 @@
                             <div>
                                 <h1 className="text-xl font-black text-white leading-tight">職安法規自動監控系統</h1>
                                 <div className="text-[10px] text-emerald-400 font-black uppercase tracking-widest mt-1">
-                                    <i className="fas fa-database mr-1"></i> 本地永久儲存已啟動
+                                    <i className="fas fa-sync fa-spin mr-1"></i> 雲端 API 已同步
                                 </div>
                             </div>
                         </div>
@@ -193,7 +214,6 @@
                         <div className="flex flex-col items-end gap-2">
                             <div className="text-slate-400 font-mono text-xs">{formatTime(currentTime)}</div>
                             <div className="flex gap-3">
-                                <button onClick={handleReset} className="bg-slate-700 text-slate-300 px-3 py-2 rounded-lg text-xs hover:bg-rose-900 hover:text-white transition-all">重置</button>
                                 <button onClick={handleAllSync} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-all">一鍵同步</button>
                                 <button onClick={handleExport} className="bg-slate-700 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-800 transition-all">匯出總表</button>
                             </div>
@@ -204,7 +224,7 @@
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
                             <div className="bg-white p-10 rounded-3xl shadow-2xl text-center relative overflow-hidden max-w-xs w-full">
                                 <div className="scan-line absolute inset-0"></div>
-                                <i className="fas fa-save text-4xl text-blue-600 animate-bounce mb-4"></i>
+                                <i className="fas fa-circle-notch text-4xl text-blue-600 animate-spin mb-4"></i>
                                 <h3 className="text-lg font-black text-slate-800">{syncText}</h3>
                             </div>
                         </div>

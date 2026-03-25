@@ -84,28 +84,24 @@
                 rows: [
                     { no: '第 4 條', old: '本法適用於各業。但因事業規模、性質及風險程度...', new: '本法適用於各業。但因事業規模、性質及風險程度，經中央主管機關指定公告者，<ins>得分階段適用</ins>。', note: '擴大適用範圍' },
                     { no: '第 45 條', old: '有下列情事之一者，處新臺幣三萬元以上十五萬元以下罰鍰...', new: '有下列情事之一者，處新臺幣三萬元以上<ins>三十萬元</ins>以下罰鍰...', note: '罰則加重' }
-                ],
-                ai: '本次修正主要針對罰則金額上限進行調整，並授權主管機關得視風險程度分階段擴大適用範圍。公司應注意相關附屬法規之指定公告日期。'
+                ]
             },
             4: { 
                 rows: [
                     { no: '第 21 條', old: '雇主對於勞工從事作業，應採取必要之安全設備及措施。', new: '雇主對於勞工從事作業，應採取必要之安全設備及措施，<ins>並應落實自動檢查計畫</ins>。', note: '加強自主管理' },
                     { no: '第 128-1 條', old: '(新增條文)', new: '<ins>雇主對於高溫環境作業勞工，應提供必要之散熱設備及足夠之飲用水。</ins>', note: '新增熱危害預防' }
-                ],
-                ai: '設施規則增加了對氣候變遷下熱危害預防的強制性規定，建議採購單位確認廠內散熱設備設施是否充足。'
+                ]
             },
             8: { 
                 rows: [
                     { no: '附表一', old: '甲苯容許濃度：100 ppm', new: '甲苯容許濃度：<ins>50 ppm</ins>', note: '標準趨嚴' },
                     { no: '附表一', old: '二甲苯容許濃度：100 ppm', new: '二甲苯容許濃度：<ins>80 ppm</ins>', note: '標準趨嚴' }
-                ],
-                ai: '多項化學物質之容許暴露濃度調降。建議環境監測單位立即檢視廠內監測紀錄，確認是否仍符合最新標準。'
+                ]
             },
             24: { 
                 rows: [
                     { no: '第 32-1 條', old: '雇主依第三十二條第一項及第二項規定使勞工延長工作時間...', new: '雇主依第三十二條第一項及第二項規定使勞工延長工作時間，<ins>應核實記載至分鐘為止</ins>。', note: '工時記載精細化' }
-                ],
-                ai: '勞檢重點已轉向出勤紀錄之精確度。公司現行打卡系統已支援至分鐘記載，無須變動軟體架構，但應加強宣導如實刷卡。'
+                ]
             }
         };
 
@@ -119,8 +115,7 @@
                         new: `雇主對於${law.name}所定之安全衛生事項，應依現行規定執行，<ins>並應保留相關執行紀錄備查</ins>。`, 
                         note: '程序強化' 
                     }
-                ],
-                ai: `針對《${law.name}》之最新趨勢，建議管理部門應落實 PDCA 循環，確保各項檢查紀錄完整。`
+                ]
             };
         };
 
@@ -206,23 +201,23 @@
             };
 
             const handleAllSync = () => {
-                setSyncText('正在批次執行全法規鑑別同步...');
+                setSyncText('正在批次執行全法規鑑別同步，請稍候...');
                 setIsSyncing(true);
                 setTimeout(() => {
                     const today = getTodayStr();
                     setLaws(prev => prev.map(law => ({ ...law, localCheckDate: today })));
                     setIsSyncing(false);
-                }, 2000);
+                }, 5000); 
             };
 
             const handleSingleSync = (lawId) => {
-                setSyncText('正在更新該項法規鑑別紀錄...');
+                setSyncText('正在重新分析條文異動並更新鑑別紀錄...');
                 setIsSyncing(true);
                 setTimeout(() => {
                     const today = getTodayStr();
                     setLaws(prev => prev.map(law => law.id === lawId ? { ...law, localCheckDate: today } : law));
                     setIsSyncing(false);
-                }, 1000);
+                }, 2500);
             };
 
             const handleExport = () => {
@@ -236,7 +231,7 @@
                         "法規類別": law.type,
                         "鑑別季度": `${now.getFullYear()} Q${quarter}`,
                         "全國法規資料庫日期": law.remoteDate,
-                        "公司最近登錄/鑑別日期": law.localCheckDate,
+                        "最近鑑別/登錄日": law.localCheckDate,
                         "合規狀態": status.text
                     };
                 });
@@ -251,13 +246,13 @@
             }, [searchQuery, filterType, laws]);
 
             const startSync = (law) => {
-                setSyncText(`正在讀取《${law.name}》最新條文...`);
+                setSyncText(`正在連線資料庫讀取《${law.name}》最新條文...`);
                 setIsSyncing(true);
                 setTimeout(() => {
                     setSelectedLaw(law);
                     setActiveTab('compare');
                     setIsSyncing(false);
-                }, 800);
+                }, 1500);
             };
 
             const currentLawData = useMemo(() => {
@@ -325,8 +320,8 @@
                                 <div className="scan-line absolute inset-0"></div>
                                 <div className="relative z-10">
                                     <i className="fas fa-circle-notch text-6xl text-blue-600 animate-spin mb-8"></i>
-                                    <h3 className="text-2xl font-black text-slate-800">{syncText}</h3>
-                                    <p className="text-slate-500 mt-3 text-base font-medium">系統正在即時更新資料庫紀錄...</p>
+                                    <h3 className="text-2xl font-black text-slate-800 px-4">{syncText}</h3>
+                                    <p className="text-slate-500 mt-3 text-base font-medium">系統正在即時更新大數據資料庫紀錄...</p>
                                 </div>
                             </div>
                         </div>
@@ -379,7 +374,7 @@
                                                                 </div>
                                                                 <div className="w-px h-8 bg-slate-200 mx-6 hidden sm:block"></div>
                                                                 <div className="flex flex-col min-w-[140px]">
-                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">公司最後鑑別日</span>
+                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">最近鑑別/登錄日</span>
                                                                     <span className={`text-sm font-black ${status.code === 'danger' ? 'text-rose-500' : 'text-emerald-700'}`}>
                                                                         {law.localCheckDate}
                                                                     </span>
@@ -394,7 +389,7 @@
                                                     </div>
 
                                                     <div className="flex items-center gap-4 shrink-0 ml-20 lg:ml-0">
-                                                        <button onClick={() => startSync(law)} className="flex-1 md:flex-none px-6 py-4 rounded-2xl font-black text-sm bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95">查看詳情</button>
+                                                        <button onClick={() => startSync(law)} className="flex-1 md:flex-none px-6 py-4 rounded-2xl font-black text-sm bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all active:scale-95">比對詳情</button>
                                                         <button
                                                             onClick={() => handleSingleSync(law.id)}
                                                             className={`flex-1 md:flex-none px-10 py-4 rounded-2xl font-black text-sm text-white shadow-xl transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center justify-center ${status.code === 'danger' ? 'bg-rose-600 shadow-rose-600/30 hover:bg-rose-700 animate-pulse' : 'bg-blue-600 shadow-blue-600/30 hover:bg-blue-700'}`}
@@ -427,7 +422,7 @@
                                                             <span className="text-sm font-black text-slate-700">{selectedLaw?.remoteDate}</span>
                                                         </div>
                                                         <div className="px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
-                                                            <span className="text-[10px] font-bold text-slate-400 block uppercase mb-1">前次鑑別日</span>
+                                                            <span className="text-[10px] font-bold text-slate-400 block uppercase mb-1">最近鑑別/登錄日</span>
                                                             <span className="text-sm font-black text-emerald-600">{selectedLaw?.localCheckDate}</span>
                                                         </div>
                                                     </div>
@@ -488,27 +483,6 @@
                                                         ))}
                                                     </tbody>
                                                 </table>
-                                            </div>
-
-                                            <div className="p-10 bg-slate-900 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
-                                                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                                                    <i className="fas fa-robot text-8xl"></i>
-                                                </div>
-                                                <div className="relative z-10 space-y-6">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/50">
-                                                            <i className="fas fa-wand-magic-sparkles text-lg"></i>
-                                                        </div>
-                                                        <h4 className="text-xl font-black tracking-tight">AI 合規性自動建議</h4>
-                                                    </div>
-                                                    <p className="text-slate-300 leading-relaxed text-lg font-medium italic">
-                                                        "{currentLawData?.ai}"
-                                                    </p>
-                                                    <div className="pt-4 flex items-center gap-3 text-xs font-black text-blue-400 uppercase tracking-widest">
-                                                        <span className="w-8 h-px bg-blue-500/50"></span>
-                                                        OSH Smart Analysis Engine
-                                                    </div>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
